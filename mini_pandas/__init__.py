@@ -30,13 +30,30 @@ class DataFrame:
         self._add_docs()
 
     def _check_input_types(self, data):
-        pass
+        if not isinstance(data, dict):
+            raise TypeError("`data` must be a dictionary")
+        for key, value in data.items():
+            if not isinstance(key, str):
+                raise TypeError("column names of `data` must be strings")
+            if not isinstance(value, np.ndarray):
+                raise TypeError("values of `data` must a numpy array")
+            if value.ndim != 1:
+                raise ValueError("values of `data` must be a one-dimensional array")
 
     def _check_array_lengths(self, data):
-        pass
+        for i, value in enumerate(data.values()):
+            if i == 0:
+                length = len(value)
+            elif length != len(value):
+                raise ValueError('all the columns of `data` must have equal length')
 
     def _convert_unicode_to_object(self, data):
         new_data = {}
+        for key, value in data.items():
+            if value.dtype.kind == 'U':
+                new_data[key] = value.astype('object')
+            else:
+                new_data[key] = value
         return new_data
 
     def __len__(self):
@@ -47,7 +64,7 @@ class DataFrame:
         -------
         int: the number of rows in the dataframe
         """
-        pass
+        return len(next(iter(self._data.values())))
 
     @property
     def columns(self):
@@ -60,7 +77,8 @@ class DataFrame:
         -------
         list of column names
         """
-        pass
+        
+        return list(self._data) # [*self._data]
 
     @columns.setter
     def columns(self, columns):
@@ -76,7 +94,17 @@ class DataFrame:
         -------
         None
         """
-        pass
+        if not isinstance(columns, list):
+            raise TypeError('`colums` must be a list object')
+        if len(columns) != len(self._data):
+            raise ValueError('length column names does not match current DataFrame columns length')
+        for col in columns:
+            if not isinstance(col, str):
+                raise TypeError('all the column names are not string')
+        if len(columns) != len(set(columns)):
+            raise ValueError('`columns` contains duplicates')
+        
+        self._data = dict(zip(columns, self._data.values()))
 
     @property
     def shape(self):
@@ -85,7 +113,8 @@ class DataFrame:
         -------
         two-item tuple of number of rows and columns
         """
-        pass
+
+        return len(self), len(self._data)
 
     def _repr_html_(self):
         """

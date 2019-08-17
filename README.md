@@ -1,32 +1,9 @@
-# Build a Data Analysis Library from Scratch
+# About Mini Pandas
 
-This repository contains a detailed project that teaches you how to build your own Python data analysis library, mini_pandas, from scratch. The end result will be a fully-functioning library similar to pandas.
+This repository contains a Data Analysis Library built with Python, namely mini_pandas. It is a fully-functioning library similar to pandas.
 
-## YouTube Video Series
 
-A detailed video series is available at the [Dunder Data YouTube channel][22] that walks you through the entire project.
-
-## Target Student
-
-This project is targeted towards those who understand the fundamentals
-of Python and would like to immerse themselves into a larger, highly structured project that covers some advanced topics. It also touches upon a few crucial areas of software development.
-
-## Pre-Requisites
-
-This is not a project suitable for beginning Python users. At a minimum you will need to have a solid understanding of the fundamentals such as:
-
-* Basic types and common data structures (lists, tuples, sets, and dictionaries)
-* Control flow with if/else statements and for loops (especially when iterating through lists or dictionaries)
-* Raising and handling exceptions
-* You will need to have covered the basics of classes and object-oriented programming. If you have never defined a class before, I strongly recommend going through an introductory tutorial on them first. [This one][15] from Corey Shafer is good.
-
-In addition to those Python basics, the main workhorse is the numpy library. The project will be difficult to complete without prior exposure to numpy. This [quickstart guide][16] might be beneficial for those needing to catch up quickly.
-
-We will not be using the pandas library within our code, but will be implementing many of the same method names with similar parameters and functionality. It will be very beneficial to have some exposure to pandas before beginning.
-
-## Objectives
-
-Most data scientists who use Python rely on pandas. In this assignment, we will build mini pandas, a library that implements many of the most common and useful methods found in pandas. Mini Pandas will:
+Most data scientists who use Python rely on pandas. This project, mini pandas, is a library that implements many of the most common and useful methods found in pandas. Mini Pandas will:
 
 * Have a DataFrame class with data stored in numpy arrays
 * Select subsets of data with the brackets operator
@@ -38,10 +15,6 @@ Most data scientists who use Python rely on pandas. In this assignment, we will 
 * Have methods specific to string columns
 * Read in data from a comma-separated value file
 
-In addition to these items specific to data analysis, you will also learn about:
-
-* Creating a development environment
-* Test-Driven Development
 
 ## Setting up the Development Environment
 
