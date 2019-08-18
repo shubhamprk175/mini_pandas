@@ -380,7 +380,7 @@ This is called boolean selection. We will make our DataFrame work similarly. Edi
 
 * If it is more than one column, raise a `ValueError`
 * Extract the underlying array from the single column
-* If the underlying array kind is not boolean ('b') raise a `ValueError`
+* If the underlying array kind is not boolean ('b') raise a `TypeError`
 * Use the boolean array to return a new DataFrame with just the rows where the boolean array is `True` along with all the columns.
 
 Run `test_simple_boolean` to test
