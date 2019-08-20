@@ -540,7 +540,16 @@ class DataFrame:
         -------
         A DataFrame
         """
-        pass
+        if type(columns) is not dict:
+            raise TypeError('columns must be a dictionary')
+
+
+        new_data = {}
+        for key, value in self._data.items():
+            new_key = columns.get(key, key)
+            new_data[new_key] = value
+        return DataFrame(new_data)
+
 
     def drop(self, columns):
         """
@@ -554,7 +563,19 @@ class DataFrame:
         -------
         A DataFrame
         """
-        pass
+        
+
+        if type(columns) is str:
+            columns = [columns]
+        elif type(columns) is not list:
+            raise TypeError('columns must be a string or a list')
+
+        new_data = {}
+        for key, value in self._data.items():
+            if key not in columns:
+                new_data[key] = value
+        
+        return DataFrame(new_data)
 
     #### Non-Aggregation Methods ####
 
@@ -576,7 +597,8 @@ class DataFrame:
         -------
         A DataFrame
         """
-        return self._non_agg(np.minimum.accumulate)
+        # To ignore NaN values
+        return self._non_agg(lambda a: a*0 + np.minimum.accumulate(np.nan_to_num(a)))
 
     def cummax(self):
         """
@@ -586,7 +608,8 @@ class DataFrame:
         -------
         A DataFrame
         """
-        return self._non_agg(np.maximum.accumulate)
+        # To ignore NaN values
+        return self._non_agg(lambda a: a*0 + np.maximum.accumulate(np.nan_to_num(a)))
 
     def cumsum(self):
         """
@@ -596,7 +619,8 @@ class DataFrame:
         -------
         A DataFrame
         """
-        return self._non_agg(np.cumsum)
+        # To ignore NaN values
+        return self._non_agg(lambda a: a*0 + np.cumsum(np.nan_to_num(a)))
 
     def clip(self, lower=None, upper=None):
         """
@@ -647,7 +671,14 @@ class DataFrame:
         -------
         A DataFrame
         """
-        pass
+        new_data = {}
+        for key, value in self._data.items():
+            if value.dtype.kind in ('O', 'b'):
+                new_data[key] = value.copy()
+            else:
+                new_data[key] = funcname(value, **kwargs)
+        
+        return DataFrame(new_data)
 
     def diff(self, n=1):
         """
@@ -662,8 +693,15 @@ class DataFrame:
         -------
         A DataFrame
         """
-        def func():
-            pass
+        def func(value):
+            value = value.astype('float')
+            value_shifted = np.roll(value, n)
+            value = value - value_shifted
+            if n >= 0:
+                value[:n] = np.nan
+            else:
+                value[n:] = np.nan
+            return value
         return self._non_agg(func)
 
     def pct_change(self, n=1):
@@ -679,8 +717,15 @@ class DataFrame:
         -------
         A DataFrame
         """
-        def func():
-            pass
+        def func(value):
+            value = value.astype('float')
+            value_shifted = np.roll(value, n)
+            value = (value - value_shifted) / value_shifted
+            if n >= 0:
+                value[:n] = np.nan
+            else:
+                value[n:] = np.nan
+            return value
         return self._non_agg(func)
 
     #### Arithmetic and Comparison Operators ####
@@ -752,7 +797,21 @@ class DataFrame:
         -------
         A DataFrame
         """
-        pass
+        if type(other) is DataFrame:
+            if other.shape[1] != 1:
+                raise ValueError('DataFrame must be one-dimensional')
+            else:
+                other = next(iter(other._data.values()))
+
+        new_data = {}
+        for key, value in self._data.items():
+            if value.dtype.kind not in ('O', 'b'):
+                method = getattr(value, op)
+                new_data[key] = method(other)
+            else:
+                new_data[key] = value.copy()
+
+        return DataFrame(new_data)
 
     def sort_values(self, by, asc=True):
         """
@@ -767,7 +826,18 @@ class DataFrame:
         -------
         A DataFrame
         """
-        pass
+        if type(by) is str:
+            order = np.argsort(self._data[by])
+        elif type(by) is list:
+            by = [self._data[col] for col in by[::-1]]
+            order = np.lexsort(by)
+        else:
+            raise TypeError('`by` must a string or a list')
+        
+        if not asc:
+            order = order[::-1]
+
+        return self[order.tolist(), :]
 
     def sample(self, n=None, frac=None, replace=False, seed=None):
         """
@@ -788,7 +858,19 @@ class DataFrame:
         -------
         A DataFrame
         """
-        pass
+        if seed:
+            np.random.seed(seed)
+        if frac:
+            if frac < 0:
+                raise ValueError('`frac` cannot be negative')
+            n = int(frac * len(self))
+            
+        if type(n) is not int:
+            raise TypeError('`n` must be an integer')
+            
+
+        row_idx = np.random.choice(range(len(self)), n, replace=replace)
+        return self[row_idx.tolist(), :]
 
     def pivot_table(self, rows=None, columns=None, values=None, aggfunc=None):
         """
