@@ -104,3 +104,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Markdown
+Steps.md
+
+# PDF
+Steps.pdf

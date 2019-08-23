@@ -864,7 +864,7 @@ class DataFrame:
             if frac < 0:
                 raise ValueError('`frac` cannot be negative')
             n = int(frac * len(self))
-            
+
         if type(n) is not int:
             raise TypeError('`n` must be an integer')
             
@@ -890,7 +890,83 @@ class DataFrame:
         -------
         A DataFrame
         """
-        pass
+
+        if rows is None and columns is None:
+            raise ValueError('`rows` and `column` both cannot be empty')
+
+
+        if values is not None:
+            if aggfunc is None:
+                raise ValueError('no `aggfunc` passed to aggregate `values`')
+            val_data = self._data[values]
+        else:
+            if aggfunc is None:
+                aggfunc = 'size'
+                val_data = np.empty(len(self))
+            else:
+                raise ValueError('`values` cannot be None')
+
+
+        if columns is not None:
+            col_data = self._data[columns]
+
+        if rows is not None:
+            row_data = self._data[rows]
+
+        if rows is None:
+            pivot = 'column'
+        elif columns is None:
+            pivot = 'row'
+        else:
+            pivot = 'all'
+
+
+        from collections import defaultdict
+        d = defaultdict(list)
+        if pivot == 'column':
+            for group, val in zip(col_data, val_data):
+                d[group].append(val)
+        elif pivot == 'row':
+            for group, val in zip(row_data, val_data):
+                d[group].append(val)
+        else:
+            for group1, group2, val in zip(col_data, row_data, val_data):
+                d[(group1, group2)].append(val)
+
+
+        agg_dict = {}
+        for group, vals in d.items():
+            arr = np.array(vals)
+            func = getattr(np, aggfunc)
+            agg_dict[group] = func(arr)
+
+        new_data = {}
+        if pivot == 'column':
+            for col in sorted(agg_dict):
+                new_data[col] = np.array([agg_dict[col]])
+        elif pivot == 'row':
+            row_vals = np.array(list(agg_dict.keys()))
+            vals = np.array(list(agg_dict.values()))
+
+            order = np.argsort(row_vals)
+            new_data[rows] = row_vals[order]
+            new_data[aggfunc] = vals[order]
+        else:
+            col_set = set([group[0] for group in agg_dict.keys()])
+            row_set = set([group[1] for group in agg_dict.keys()])
+
+            col_vals = sorted(col_set)
+            row_vals = sorted(row_set)
+
+            new_data[rows] = np.array(row_vals)
+            for col in col_vals:
+                new_vals = []
+                for row in row_vals:
+                    new_vals.append(agg_dict.get((col, row), np.nan))
+                new_data[col] = np.array(new_vals)
+
+        
+        return DataFrame(new_data)
 
     def _add_docs(self):
         agg_names = ['min', 'max', 'mean', 'median', 'sum', 'var',
@@ -998,7 +1074,20 @@ class StringMethods:
         return self._str_method(str.encode, col, encoding, errors)
 
     def _str_method(self, method, col, *args):
-        pass
+        old_vals = self._df._data[col]
+        if old_vals.dtype.kind != 'O':
+            raise TypeError('`col` have to be a string column')
+        
+        new_vals = []
+        for val in old_vals:
+            if val is None:
+                new_val = None
+            else:
+                new_val = method(val, *args)
+            new_vals.append(new_val)
+        arr = np.array(new_vals)
+
+        return DataFrame({col: arr})
 
 
 def read_csv(fn):
@@ -1013,4 +1102,26 @@ def read_csv(fn):
     -------
     A DataFrame
     """
-    pass
+    from collections import defaultdict
+
+    data = defaultdict(list)
+    with open(fn) as f:
+        header = f.readline()
+        column_names = header.rstrip('\n').split(',')
+        for row in f:
+            value = row.rstrip('\n').split(',')
+            for col, val in zip(column_names, value):
+                data[col].append(val)
+        
+    new_data = {}
+    for col, vals in data.items():
+        try:
+            new_data[col] = np.array(vals, dtype='int')
+        except ValueError:
+            try:
+                new_data[col] = np.array(vals, dtype='float')
+            except ValueError:
+                new_data[col] = np.array(vals, dtype='object')
+    return DataFrame(new_data)
+
+
